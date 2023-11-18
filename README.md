@@ -5,5 +5,5 @@
 App hosteada en [Vercel](https://abm-sprint5.vercel.app/)
 
 ```js
-   npm run dev
+   npm run dev // Para probarlo localmente
 ```
