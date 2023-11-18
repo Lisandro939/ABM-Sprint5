@@ -1,11 +1,13 @@
 import { ChangeEvent, useEffect, useState } from 'react'
+import Form from './Form'
 
 export default function Table() {
 
   const [form, setForm] = useState('hidden')
-
   const [guardando, setGuardando] = useState(false)
   const [texto, setTexto] = useState('')
+  const [token, setToken] = useState('')
+  const [mode, setMode] = useState('new')
 
   type Product = {
     nombre: string,
@@ -55,23 +57,71 @@ export default function Table() {
   const [data, setData] = useState<Product[]>([])
 
   useEffect(() => {
-    fetch("https://el-buen-sabor.zeabur.app/api/v1/articulosManufacturados/listaProductos")
-    .then(res => res.json())
-    .then(res => setData(res))
-  }, [])
-
-  function postProduct() {
-    setGuardando(true)
-    fetch("https://el-buen-sabor.zeabur.app/api/v1/articulosManufacturados/addProducto", {
+    fetch("https://el-buen-sabor.zeabur.app/auth/login", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
+      body: JSON.stringify({
+        "username": "Lisandro939",
+        "password": "lisandro123"
+      })
+    })
+    .then((res) => res.json())
+    .then((res) => {
+      localStorage.setItem('token', res.token)
+      setToken(res.token)
+
+      fetch("https://el-buen-sabor.zeabur.app/api/v1/articulosManufacturados/listaProductos",
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        }
+      })
+      .then(res => res.json())
+      .then(res => setData(res))
+    })
+
+
+    
+    
+  }, [])
+
+  function postProduct() {
+    setGuardando(true)
+    fetch("https://el-buen-sabor.zeabur.app/api/v1/articulosManufacturados/addProduct", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
       body: JSON.stringify(producto)
     })
-    .then((res) => {
-      console.log(res.json())
+    .then(() => {
+      setGuardando(false)
+      setTexto('Guardado')
     })
+  }
+
+  function putProduct() {
+    setGuardando(true)
+    fetch("https://el-buen-sabor.zeabur.app/api/v1/articulosManufacturados/modifyProduct", {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(producto)
+    })
+    .then(() => {
+      setGuardando(false)
+      setTexto('Guardado')
+    })
+  }
+
+  function handleEdit(product: Product) {
+    setProducto(product)
   }
 
   return (
@@ -119,6 +169,7 @@ export default function Table() {
         </thead>
         <tbody className='w-full'>
           {
+            data.length > 0 ? 
             data.map((product) => {
               return (
                 <tr key={product.nombre} className='w-full'>
@@ -132,123 +183,37 @@ export default function Table() {
                   <td className='text-center'>{product.nivelDeStock}</td>
                   <td className='text-center'>{product.estado}</td>
                   <td className='text-center'>
-                    <button className='bg-yellow-300 rounded-lg shadow-md shadow-gray-400 px-2 py-1 hover:shadow-white font-semibold'>
+                    <button 
+                    onClick={() => {
+                      handleEdit(product)
+                      setForm('flex')
+                      setMode('edit')
+                    }}
+                    className='bg-yellow-300 rounded-lg shadow-md shadow-gray-400 px-2 py-1 hover:shadow-white font-semibold'>
                       Editar
                     </button>
-                    <button className='bg-red-300 rounded-lg shadow-md shadow-gray-400 px-2 py-1 hover:shadow-white font-semibold'>
-                      Eliminar
-                    </button>
+                   
                   </td>
 
                 </tr>
               )
             })
+            : <tr><td className='text-center' colSpan={10}>Cargando...</td></tr>
           }
         </tbody>
       </table>
     </div>
     <div className={'fixed top-0 w-screen h-screen flex items-center justify-center ' + form}>
-      <div className='flex flex-col justify-between w-2/3 h-2/3 bg-white border-[1px] border-gray-500 rounded-md shadow-xl shadow-gray-500'>
-        <div className='flex flex-row justify-between items-center px-10 py-4'>
-          <h1 className='font-semibold text-xl'>Nuevo producto</h1>
-          <button 
-          className='bg-red-300 rounded-lg shadow-md shadow-gray-400 px-2 py-1 hover:shadow-white font-semibold'
-          onClick={() => setForm("hidden")}>
-            Cerrar
-          </button>
-        </div>
-        <div className='px-10 py-4'>
-          <form className='grid grid-cols-2 gap-4'>
-              <div className='flex flex-col gap-2'>
-                <label>Nombre</label>
-                <input 
-                className='border-[1px] border-gray-400 rounded-md shadow-md shadow-gray-400' 
-                type="text" 
-                name='nombre'
-                value={producto.nombre}
-                onChange={handleInputChange}/>
-              </div>
-              <div className='flex flex-col gap-2'>
-                <label>Rubro</label>
-                <select 
-                className='border-[1px] border-gray-400 rounded-md shadow-md shadow-gray-400'
-                name='rubro'
-                value={producto.rubro}
-                onChange={handleInputChange}>
-                  <option>Hamburguesa</option>
-                  <option>Pizza</option>
-                  <option>Papas fritas</option>
-                  <option>Bebidas</option>
-                </select>
-              </div>
-              <div className='flex flex-col gap-2'>
-                <label>Stock minimo</label>
-                <input 
-                className='border-[1px] border-gray-400 rounded-md shadow-md shadow-gray-400' 
-                type="number" 
-                name='stockMinimo'
-                value={producto.stockMinimo}
-                onChange={handleInputChange}/>
-              </div>
-              <div className='flex flex-col gap-2'>
-                <label>Stock actual</label>
-                <input 
-                className='border-[1px] border-gray-400 rounded-md shadow-md shadow-gray-400' 
-                type="number" 
-                name='stockActual'
-                value={producto.stockActual}
-                onChange={handleInputChange}
-                />
-              </div>
-              <div className='flex flex-col gap-2'>
-                <label>Precio de costo</label>
-                <input 
-                className='border-[1px] border-gray-400 rounded-md shadow-md shadow-gray-400' 
-                type="number" 
-                name='precioDeCosto'
-                value={producto.precioDeCosto}
-                onChange={handleInputChange}
-                />
-              </div>
-               <div className='flex flex-col gap-2'>
-                <label>Tiempo estimado en cocina</label>
-                <input 
-                className='border-[1px] border-gray-400 rounded-md shadow-md shadow-gray-400' 
-                type="number" 
-                name='tiempoEnCocina'
-                value={producto.tiempoEnCocina}
-                onChange={handleInputChange}
-                />
-              </div>
-              <div className='flex flex-col gap-2'>
-                <label>Unidad de medida</label>
-                <input 
-                className='border-[1px] border-gray-400 rounded-md shadow-md shadow-gray-400' 
-                type="text" 
-                name='unidadDeMedida'
-                value={producto.unidadDeMedida}
-                onChange={handleInputChange}
-                />
-              </div>
-          </form>
-          
-        </div>
-        <div className='w-full flex flex-row justify-between items-end px-4 py-4'>
-          <button 
-          className='bg-green-300 rounded-lg shadow-md shadow-gray-400 px-2 py-1 hover:shadow-white font-semibold'
-          onClick={() => postProduct()}
-          >
-            Guardar
-          </button>
-          {
-            guardando ? (
-              <p className='font-semibold text-yellow-400'>Guardando...</p>
-            ) : (
-              <p className='font-semibold text-green-400'>{texto}</p>
-            )
-          }
-        </div>
-      </div>
+      <Form 
+      producto={producto}
+      handleInputChange={handleInputChange}
+      mode={mode}
+      setForm={setForm}
+      postProduct={postProduct}
+      putProduct={putProduct}
+      guardando={guardando}
+      texto={texto}
+      />
     </div>
     </>
   )
