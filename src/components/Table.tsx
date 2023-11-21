@@ -63,8 +63,8 @@ export default function Table() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        "username": "Lisandro939",
-        "password": "lisandro123"
+        "username": "Lisandro90",
+        "password": "lisandro1234"
       })
     })
     .then((res) => res.json())
